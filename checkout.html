@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán - Beauty Nail Salon</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-top">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+                <div class="logo">
+                    <a href="index.html" class="logo-link">
+                        <img src="logo.jpg" alt="Beauty Nail Salon" class="logo-image">
+                        <span class="logo-text">BEAUTY NAIL SALON</span>
+                    </a>
+                </div>
+                <div class="header-icons">
+                    <a href="cart.html" class="icon-btn" title="Giỏ hàng"><i class="fas fa-shopping-cart"></i></a>
+                    <button class="icon-btn" id="bookingBtn" title="Đặt lịch"><i class="fas fa-calendar-check"></i></button>
+                    <button class="icon-btn" id="sellerBtn" title="Đăng nhập người bán"><i class="fas fa-user-tie"></i></button>
+                </div>
+            </div>
+            <nav class="main-nav" id="mainNav">
+                <a href="products.html">SẢN PHẨM</a>
+                <a href="dich-vu.html">DỊCH VỤ</a>
+                <a href="dat-lich.html">ĐẶT LỊCH</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="checkout-main">
+        <div class="container">
+            <h1 class="page-title">Thanh toán</h1>
+            <div id="checkoutContent">
+                <div class="checkout-summary">
+                    <h2>Đơn hàng của bạn</h2>
+                    <ul class="checkout-products" id="checkoutProducts"></ul>
+                    <p class="checkout-total">Tổng cộng: <strong id="checkoutTotal">0đ</strong></p>
+                </div>
+                <form class="payment-form" id="paymentForm">
+                    <h2>Chọn phương thức thanh toán</h2>
+                    <div class="form-group">
+                        <input type="radio" id="cod" name="payment" value="cod" checked>
+                        <label for="cod">Thanh toán khi nhận hàng (COD)</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="radio" id="bank" name="payment" value="bank">
+                        <label for="bank">Chuyển khoản ngân hàng</label>
+                    </div>
+                    <button type="submit" class="checkout-btn">Xác nhận đặt hàng</button>
+                </form>
+            </div>
+            <div id="emptyCheckoutMsg" style="display:none; text-align:center; padding:40px;">
+                <p>Giỏ hàng trống. <a href="products.html">Mua sắm ngay</a></p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p class="copyright">© 2025 Beauty Nail Salon</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="modal" id="sellerModal">
+        <div class="modal-content seller-modal">
+            <span class="close-btn" id="closeSellerModal">&times;</span>
+            <h2>Đăng nhập Người Bán</h2>
+            <div id="sellerFormWrapper">
+                <form id="sellerLoginForm" class="seller-login-form">
+                    <div class="form-group">
+                        <label for="sellerEmail">Email *</label>
+                        <input type="email" id="sellerEmail" required placeholder="seller@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="sellerPassword">Mật khẩu *</label>
+                        <input type="password" id="sellerPassword" required placeholder="Nhập mật khẩu">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="booking-submit-btn">Đăng nhập</button>
+                        <button type="button" class="booking-submit-btn" id="sellerCancelBtn">Hủy</button>
+                    </div>
+                    <p class="seller-note">Demo: seller@example.com / sellerpass</p>
+                </form>
+            </div>
+            <div id="sellerPanel" style="display:none;">
+                <p>Đăng nhập: <strong id="sellerNameDisplay"></strong></p>
+                <div class="seller-panel-actions">
+                    <a href="seller-dashboard.html" class="booking-submit-btn">Bảng Điều Khiển</a>
+                    <button id="sellerLogoutBtn" class="booking-submit-btn">Đăng xuất</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="store.js"></script>
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cart = getCart();
+            const content = document.getElementById('checkoutContent');
+            const empty = document.getElementById('emptyCheckoutMsg');
+
+            if (cart.length === 0) {
+                content.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            const total = getCartTotal();
+            document.getElementById('checkoutProducts').innerHTML = cart.map(i =>
+                `<li>${i.name} x${i.qty} <span>${formatPrice(i.price * i.qty)}</span></li>`
+            ).join('');
+            document.getElementById('checkoutTotal').textContent = formatPrice(total);
+
+            document.getElementById('paymentForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const customer = JSON.parse(sessionStorage.getItem('orderCustomer') || '{}');
+                const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+                try {
+                    const order = await createOrder(customer, cart, paymentMethod);
+                    sessionStorage.removeItem('orderCustomer');
+                    alert('Đặt hàng thành công!\nMã đơn: ' + order.id + '\nTổng tiền: ' + formatPrice(order.total) + '\nChúng tôi sẽ liên hệ sớm nhất.');
+                    window.location.href = 'index.html';
+                } catch (err) {
+                    alert('Có lỗi: ' + (err.message || 'Không thể tạo đơn hàng. Kiểm tra XAMPP đã bật Apache và MySQL chưa.'));
+                }
+            });
+        });
+    </script>
+</body>
+</html>
