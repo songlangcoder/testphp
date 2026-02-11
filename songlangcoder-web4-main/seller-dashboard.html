@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý bán hàng - Beauty Nail Salon</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .dashboard { max-width: 1100px; margin: 0 auto; padding: 30px 20px; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+        .dashboard-tabs { display: flex; gap: 10px; margin-bottom: 25px; }
+        .dashboard-tab { padding: 12px 24px; background: #f5f5f5; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .dashboard-tab.active { background: #8b2635; color: #fff; }
+        .dashboard-section { display: none; }
+        .dashboard-section.active { display: block; }
+        .dashboard-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.08); }
+        .dashboard-table th, .dashboard-table td { padding: 14px 18px; text-align: left; border-bottom: 1px solid #eee; }
+        .dashboard-table th { background: #f8f8f8; font-weight: 600; }
+        .dashboard-table tr:last-child td { border-bottom: none; }
+        .btn-edit, .btn-delete { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin-right: 5px; }
+        .btn-edit { background: #8b2635; color: #fff; }
+        .btn-delete { background: #dc3545; color: #fff; }
+        .btn-status { padding: 5px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .status-pending { color: #856404; background: #fff3cd; }
+        .status-confirmed { color: #155724; background: #d4edda; }
+        .status-shipping { color: #004085; background: #cce5ff; }
+        .status-delivered { color: #155724; background: #d4edda; }
+        .price-input { width: 100px; padding: 6px 10px; border: 2px solid #e5e5e5; border-radius: 6px; }
+        .back-link { color: #8b2635; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <div>
+                <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Về trang chủ</a>
+                <h1 style="margin-top:15px;">Quản lý bán hàng</h1>
+            </div>
+            <div>
+                <span id="sellerInfo" style="color:#666;"></span>
+                <button id="logoutBtn" class="btn-edit" style="margin-left:15px;">Đăng xuất</button>
+            </div>
+        </div>
+
+        <div class="dashboard-tabs">
+            <button class="dashboard-tab active" data-tab="products">Sản phẩm</button>
+            <button class="dashboard-tab" data-tab="orders">Đơn hàng</button>
+        </div>
+
+        <div id="productsSection" class="dashboard-section active">
+            <h2 style="margin-bottom:20px;">Quản lý sản phẩm & giá</h2>
+            <div style="overflow-x:auto;">
+                <table class="dashboard-table" id="productsTable">
+                    <thead>
+                        <tr>
+                            <th>Hình</th>
+                            <th>Tên</th>
+                            <th>Giá (VNĐ)</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="ordersSection" class="dashboard-section">
+            <h2 style="margin-bottom:20px;">Quản lý đơn hàng</h2>
+            <div style="overflow-x:auto;">
+                <table class="dashboard-table" id="ordersTable">
+                    <thead>
+                        <tr>
+                            <th>Mã ĐH</th>
+                            <th>Khách hàng</th>
+                            <th>SĐT</th>
+                            <th>Tổng tiền</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="store.js"></script>
+    <script>
+        // Kiểm tra đăng nhập
+        const auth = JSON.parse(localStorage.getItem('sellerAuth') || 'null');
+        if (!auth || !auth.email) {
+            alert('Vui lòng đăng nhập trước.');
+            window.location.href = 'index.html';
+        }
+
+        document.getElementById('sellerInfo').textContent = auth.email;
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('sellerAuth');
+            window.location.href = 'index.html';
+        });
+
+        // Tabs
+        document.querySelectorAll('.dashboard-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.dashboard-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab + 'Section').classList.add('active');
+            });
+        });
+
+        // Render sản phẩm
+        async function renderProducts() {
+            const products = await getProducts();
+            const tbody = document.getElementById('productsBody');
+            tbody.innerHTML = products.map(p => `
+                <tr data-id="${p.id}">
+                    <td><img src="${p.image}" alt="" style="width:50px;height:50px;object-fit:cover;border-radius:6px;"></td>
+                    <td>${p.name}</td>
+                    <td><input type="number" class="price-input" value="${p.price}" data-id="${p.id}" min="0"></td>
+                    <td>
+                        <button class="btn-edit btn-save-price" data-id="${p.id}">Cập nhật giá</button>
+                        <button class="btn-delete btn-delete-product" data-id="${p.id}">Xóa</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            tbody.querySelectorAll('.btn-save-price').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const id = this.dataset.id;
+                    const input = tbody.querySelector('.price-input[data-id="' + id + '"]');
+                    const price = parseInt(input.value) || 0;
+                    const ok = await updateProductPrice(id, price);
+                    if (ok) alert('Đã cập nhật giá!');
+                });
+            });
+
+            tbody.querySelectorAll('.btn-delete-product').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    if (!confirm('Xóa sản phẩm này?')) return;
+                    const ok = await deleteProduct(this.dataset.id);
+                    if (ok) renderProducts();
+                });
+            });
+        }
+
+        // Render đơn hàng
+        async function renderOrders() {
+            const orders = await getOrders();
+            const tbody = document.getElementById('ordersBody');
+            const statusMap = { pending: 'Chờ xử lý', confirmed: 'Đã xác nhận', shipping: 'Đang giao', delivered: 'Đã giao' };
+
+            tbody.innerHTML = orders.length === 0
+                ? '<tr><td colspan="6" style="text-align:center;padding:40px;">Chưa có đơn hàng nào</td></tr>'
+                : orders.map(o => `
+                <tr>
+                    <td><strong>${o.id}</strong></td>
+                    <td>${(o.customer && o.customer.fullname) || o.customer_name || '-'}</td>
+                    <td>${(o.customer && o.customer.phone) || o.customer_phone || '-'}</td>
+                    <td>${formatPrice(o.total)}</td>
+                    <td><span class="btn-status status-${o.status}">${statusMap[o.status] || o.status}</span></td>
+                    <td>
+                        <select class="status-select" data-id="${o.id}">
+                            <option value="pending" ${o.status==='pending'?'selected':''}>Chờ xử lý</option>
+                            <option value="confirmed" ${o.status==='confirmed'?'selected':''}>Đã xác nhận</option>
+                            <option value="shipping" ${o.status==='shipping'?'selected':''}>Đang giao</option>
+                            <option value="delivered" ${o.status==='delivered'?'selected':''}>Đã giao</option>
+                        </select>
+                    </td>
+                </tr>
+            `).join('');
+
+            tbody.querySelectorAll('.status-select').forEach(sel => {
+                sel.addEventListener('change', async function() {
+                    await updateOrderStatus(this.dataset.id, this.value);
+                    renderOrders();
+                });
+            });
+        }
+
+        (async function init() {
+            await renderProducts();
+            await renderOrders();
+        })();
+    </script>
+</body>
+</html>

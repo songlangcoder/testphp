@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sản phẩm</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-top">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+                <div class="logo">
+                    <a href="index.html" class="logo-link">
+                        <img src="logo.jpg" alt="Beauty Nail Salon" class="logo-image">
+                        <span class="logo-text">BEAUTY NAIL SALON</span>
+                    </a>
+                </div>
+                <div class="header-icons">
+                    <a href="cart.html" class="icon-btn" title="Giỏ hàng" id="cartIconBtn">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-badge" id="cartBadge"></span>
+                    </a>
+                    <button class="icon-btn" id="searchBtn" title="Tìm kiếm"><i class="fas fa-search"></i></button>
+                    <button class="icon-btn" id="bookingBtn" title="Đặt lịch"><i class="fas fa-calendar-check"></i></button>
+                    <button class="icon-btn" id="sellerBtn" title="Đăng nhập người bán"><i class="fas fa-user-tie"></i></button>
+                </div>
+            </div>
+            <nav class="main-nav" id="mainNav">
+                <a href="products.html" class="active">SẢN PHẨM</a>
+                <a href="dich-vu.html">DỊCH VỤ</a>
+                <a href="dat-lich.html">ĐẶT LỊCH</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="products-main page-section">
+        <div class="container">
+            <h1 class="page-title">Sản phẩm nổi bật</h1>
+            <p class="page-subtitle">Các sản phẩm nail chuyên nghiệp chất lượng cao</p>
+            <div class="products-grid" id="productsGrid"><p style="text-align:center;padding:40px;">Đang tải...</p></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h4>LIÊN HỆ</h4>
+                    <p class="footer-description">123 Đường Láng, Đống Đa, Hà Nội</p>
+                    <p class="footer-description">Hotline: +84 123 456 789</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="copyright">© 2025 Beauty Nail Salon</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="modal" id="searchModal">
+        <div class="modal-content search-modal">
+            <span class="close-btn" id="closeSearchModal">&times;</span>
+            <h2>Tìm Kiếm</h2>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm...">
+                <button type="button" id="searchSubmitBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="sellerModal">
+        <div class="modal-content seller-modal">
+            <span class="close-btn" id="closeSellerModal">&times;</span>
+            <h2>Đăng nhập Người Bán</h2>
+            <div id="sellerFormWrapper">
+                <form id="sellerLoginForm" class="seller-login-form">
+                    <div class="form-group">
+                        <label for="sellerEmail">Email *</label>
+                        <input type="email" id="sellerEmail" required placeholder="seller@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="sellerPassword">Mật khẩu *</label>
+                        <input type="password" id="sellerPassword" required placeholder="Nhập mật khẩu">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="booking-submit-btn">Đăng nhập</button>
+                        <button type="button" class="booking-submit-btn" id="sellerCancelBtn">Hủy</button>
+                    </div>
+                    <p class="seller-note">Demo: seller@example.com / sellerpass</p>
+                </form>
+            </div>
+            <div id="sellerPanel" style="display:none;">
+                <p>Đăng nhập: <strong id="sellerNameDisplay"></strong></p>
+                <div class="seller-panel-actions">
+                    <a href="seller-dashboard.html" class="booking-submit-btn">Bảng Điều Khiển</a>
+                    <button id="sellerLogoutBtn" class="booking-submit-btn">Đăng xuất</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="store.js"></script>
+    <script src="script.js"></script>
+    <script>
+        function updateCartBadge() {
+            const cart = getCart();
+            const total = cart.reduce((s, i) => s + i.qty, 0);
+            const badge = document.getElementById('cartBadge');
+            if (badge) {
+                badge.textContent = total > 0 ? total : '';
+                badge.style.display = total > 0 ? 'flex' : 'none';
+            }
+        }
+        updateCartBadge();
+
+        async function renderProducts(filter) {
+            const grid = document.getElementById('productsGrid');
+            const products = await getProducts();
+            const filtered = (filter && filter.trim()) ? products.filter(p => p.name.toLowerCase().includes(filter.toLowerCase())) : products;
+            grid.innerHTML = filtered.map(p => `
+                <div class="product-card" data-id="${p.id}">
+                    <img src="${p.image}" alt="${p.name}">
+                    <h3>${p.name}</h3>
+                    <p>${p.desc || ''}</p>
+                    <div class="product-price">${formatPrice(p.price)}</div>
+                    <button class="add-cart-btn" data-id="${p.id}"><i class="fas fa-cart-plus"></i> Thêm vào giỏ</button>
+                </div>
+            `).join('');
+            grid.querySelectorAll('.add-cart-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const id = this.dataset.id;
+                    await addToCart(id);
+                    updateCartBadge();
+                    alert('Đã thêm vào giỏ hàng!');
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+            if (typeof initMobileMenu === 'function') initMobileMenu();
+        });
+        document.getElementById('searchInput')?.addEventListener('input', e => renderProducts(e.target.value));
+    </script>
+</body>
+</html>
